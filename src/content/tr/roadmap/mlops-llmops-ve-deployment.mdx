@@ -2,98 +2,129 @@
 title: "MLOps, LLMOps ve Deployment"
 slug: "mlops-llmops-ve-deployment"
 order: 12
-description: "Canlıya alınan yapay zeka sistemleri için paketleme, servisleme, izleme, sürümleme, performans optimizasyonu ve LLMOps."
-tags: ["Model Artifact ve Servis Sözleşmeleri", "Servisleme", "LLM Servisleme Optimizasyonları", "Monitoring", "Sürümleme", "LLMOps", "Güvenlik"]
+description: "Yapay zeka sistemlerini canlıya alma, sürümleme, izleme ve işletme temelleri."
+tags: ["Deployment", "MLOps", "LLMOps", "Monitoring", "Sürümleme", "Güvenlik"]
 ---
 
 ## Genel Bakış
 
-**Canlıya Alma (Deployment)**, eğitilmiş bir modeli kullanıcıların veya sistemlerin erişebileceği ortama taşıma sürecidir. **MLOps (Makine Öğrenmesi Operasyonları)** ise modelin geliştirme, yayına alma, izleme, bakım ve sürüm yönetimi adımlarını tekrarlanabilir hale getiren mühendislik disiplinidir.
+**Canlıya alma (deployment)**, eğitilmiş bir modeli veya yapay zeka uygulamasını kullanıcıların ya da diğer sistemlerin erişebileceği bir ortama taşımaktır. Bu adım, modeli bir sunucuya kopyalamaktan ibaret değildir. Uygulamanın doğru girdileri alması, tutarlı sonuç üretmesi, sorunlarının fark edilmesi ve yeni sürümlerin kontrollü biçimde yayımlanması da gerekir.
 
-Bu modülde şu başlıklar işlenecektir:
+**MLOps (Machine Learning Operations)**, makine öğrenmesi modellerinin geliştirilmesi, canlıya alınması, izlenmesi ve güncellenmesi süreçlerini tekrarlanabilir ve yönetilebilir hâle getiren mühendislik yaklaşımıdır. Model geliştirme ile üretim ortamındaki işletim adımlarını bir arada ele alır.
 
-* Model Artifact ve Servis Sözleşmeleri
+Büyük dil modeli tabanlı sistemleri üretimde yönetmeye yönelik operasyonel yaklaşımlar yaygın olarak **LLMOps** adıyla anılır. Terimin kapsamı ekip ve ürüne göre değişebilir; burada LLM tabanlı sistemlerin üretim süreçleri anlamında kullanılıyor.
+
+Bu modülde şu başlıklar incelenecektir:
+
+* Model Artifact'ı ve Servis Sözleşmeleri
 * Servisleme Biçimleri
-* LLM Servisleme Optimizasyonları
-* İzleme, Geri Bildirim ve Data Drift
-* Sürümleme, Yayın ve Rollback
-* LLMOps, Prompt Sürümleme ve LLM Değerlendirmesi
+* Sürümleme, Yayın ve Geri Alma
+* İzleme ve Veri Değişimleri
 * Kapasite, Güvenlik ve Gizlilik
+* MLOps Akışı
+* LLM Servisleme ve Optimizasyon
+* Prompt, Model ve Uygulama Sürümleme
+* LLM Değerlendirmesi
+* Maliyet ve Gecikme İzleme
 
-## Genel Bilgi
+## Deployment ve MLOps
 
-### Model Artifact ve Servis Sözleşmeleri
+Bu bölüm, modelin üretimde kullanılabilmesi için gereken paketleme, servisleme, yayın, izleme ve bakım çalışmalarını ele alır.
 
-Bir modeli canlıya almadan önce hangi model çıktısının servis edileceğini ve bu modelin hangi veri biçimini beklediğini açıkça tanımlamak gerekir. Bu nedenle MLOps sürecinin temel parçalarından biri model artifact'larının ve veri/API sözleşmelerinin yönetimidir.
+### Model Artifact'ı ve Servis Sözleşmeleri
 
-**Model Artifact**, eğitilmiş modelin kaydedilmiş hâlini ifade eder. Bu; model ağırlıkları, serileştirilmiş model nesnesi veya benzeri bir çıktı olabilir. Ancak artifact tek başına yeterli değildir. Modeli üreten kod, özellik sırası, encoder, scaler ve eğitim sırasında kullanılan veri varsayımlarıyla birlikte değerlendirilmelidir.
+**Model artifact'ı**, eğitim sonunda kaydedilen model dosyası veya model paketidir. Model ağırlıklarını ya da serileştirilmiş bir model nesnesini içerebilir. Tahminlerin eğitimdeki davranışla tutarlı kalması için artifact; modeli üreten kod, özellik sırası, encoder ve scaler gibi ön işleme adımları ve ilgili yapılandırmalarla birlikte değerlendirilmelidir.
 
-**Tahmin API Sözleşmesi**, API'nin hangi alanları kabul ettiğini, bu alanların hangi tür ve formatta olması gerektiğini ve hangi çıktıyı üreteceğini tanımlar. Eğitim sırasında kullanılan özellik sırası veya preprocessing adımları ile servisleme sırasında uygulanan işlemler farklıysa model hata vermeden yanlış tahminler üretebilir.
+Modeli kullanan API'nin kabul ettiği girdileri ve döndürdüğü çıktıları tanımlayan kurallar **servis sözleşmesini** oluşturur. Örneğin API; gerekli alanları, veri türlerini, izin verilen değerleri ve hata durumlarında verilecek yanıtı belirtir. Eğitim sırasında uygulanan özellik sırası veya ön işleme canlı sistemde farklıysa, model hata vermeden hatalı tahminler üretebilir.
 
-Tahmin API'sinde **şema doğrulama** kullanmak iyi bir başlangıçtır. Bunun yanında, gelen verinin yapısında veya anlamında zamanla oluşabilecek değişimleri izlemek de önemlidir. Kritik alanlar için beklenen değer aralıkları, kategoriler ve eksik veri oranları bir **veri sözleşmesi** içinde tanımlanabilir. Yeni bir kategori, beklenmeyen eksiklik veya geçersiz bir değer görüldüğünde isteğin reddedilmesi, fallback uygulanması ya da insan incelemesine yönlendirilmesi gibi davranışlar önceden belirlenebilir.
+Bu nedenle istekleri bir şemaya göre doğrulamak ve kritik girdiler için beklenen aralıkları, kategorileri ve eksik veri davranışını belirlemek yararlıdır. Geçersiz bir istek reddedilebilir veya sistem tasarımına göre kontrollü bir yedek davranışa yönlendirilebilir.
 
 ### Servisleme Biçimleri
 
-**Konteyner**, uygulamayı ve bağımlılıklarını aynı çalışma ortamında paketlemeye yardım eder. API katmanı model yükleme, girdi doğrulama ve tahmin üretme işlevini üstlenir. **Toplu Tahmin**, **Gerçek Zamanlı API** ve **Asenkron İşleme** farklı servisleme biçimleridir; seçim kullanıcı beklentisine, hacme ve kabul edilebilir gecikmeye bağlıdır.
+Modelin nasıl sunulacağı kullanım senaryosuna, istek hacmine ve kabul edilebilir bekleme süresine bağlıdır:
 
-Her model HTTP isteğiyle anlık çalışmak zorunda değildir. Günlük öneri listesi, risk skoru veya rapor üretimi toplu tahminle daha düşük maliyetle yapılabilir; birkaç saniye beklenebilen işlerde asenkron kuyruk ve durum takibi değerlendirilebilir.
+* **Toplu tahmin (batch prediction):** Çok sayıda kayıt belirli aralıklarla birlikte işlenir. Günlük öneri listesi veya dönemsel risk skoru üretimi buna örnektir.
+* **Gerçek zamanlı API:** İstek geldiğinde tahmin üretilir. Kullanıcının yanıtı hemen görmesi gereken uygulamalarda tercih edilebilir.
+* **Asenkron işleme:** Uzun süren işler bir kuyruğa alınır; kullanıcı veya başka bir servis işin durumunu daha sonra kontrol eder.
 
-### LLM Servisleme Optimizasyonları
+Uygulama ve bağımlılıkları bir **konteyner** içinde paketlemek, farklı ortamlarda benzer biçimde çalıştırmayı kolaylaştırır. API katmanı da girdiyi doğrulayıp modeli çağırabilir ve sonucu belirlenmiş formatta döndürebilir.
 
-Canlı LLM servislerinde **quantization**, model ağırlıklarını daha düşük hassasiyetle tutarak bellek ihtiyacını azaltabilir. **KV cache**, önceki token'lar için hesaplanan attention değerlerini saklayarak üretimi hızlandırır; **batching** ise birden fazla isteği birlikte işleyerek toplam kapasiteyi artırabilir. Bu tercihlerin kalite, bellek ve tekil isteğin gecikmesi üzerindeki etkisi hedef iş yükünde ölçülmelidir.
+### Sürümleme, Yayın ve Geri Alma
 
-**Yanıt önbellekleme**, aynı veya benzer isteklerde modeli yeniden çalıştırmadan sonuç döndürebilir. **Model yönlendirme** ise basit istekleri küçük modele, daha zor istekleri daha yetenekli modele gönderebilir. Cache anahtarı ve yönlendirme kuralları; güncellik, kullanıcı yetkisi, güvenlik ve fallback davranışı dikkate alınarak tasarlanmalıdır.
+Üretimdeki bir sorunun kaynağını bulabilmek için kod, model, veri şeması, ön işleme adımları ve yapılandırmaların hangi sürümlerle kullanıldığını takip etmek gerekir. Bu bileşenler birlikte kaydedildiğinde, önceki çalışan sürüme dönmek de kolaylaşır.
 
-Bu servisleme tercihleri; kullanılan model, prompt ve bilgi getirme bileşenleriyle birlikte sürümlenip maliyet, gecikme ve kalite metrikleri üzerinden izlenmelidir. Bu izleme ve değerlendirme disiplini LLMOps başlığında ele alınır.
+Yeni sürüm önce test ve hazırlık ortamında örnek girdilerle denenebilir. Ardından trafik kademeli biçimde yeni sürüme aktarılabilir. Örneğin kullanıcı isteklerinin küçük bir bölümü önce yeni modele gönderilir. **Geri alma (rollback)** planı, yeni sürümde hata oranı veya gecikme beklenmedik biçimde artarsa önceki sürüme dönme adımlarını tanımlar.
 
-### İzleme, Geri Bildirim ve Data Drift
+Yayın öncesinde hangi göstergelerin izleneceğini ve hangi durumda yayının durdurulacağını belirlemek karar vermeyi kolaylaştırır. Bu göstergeler API hata oranı, yanıt süresi ve uygulamanın iş hedefiyle ilgili bir ölçüm olabilir.
 
-Bu servisleme kararlarının hız, maliyet ve kalite üzerindeki etkisini anlayabilmek için sistemin davranışını düzenli olarak izlemek gerekir.
+### İzleme ve Veri Değişimleri
 
-**İzleme (Monitoring)** yalnızca sunucunun ayakta olup olmadığını kontrol etmek değildir. Girdi dağılımı, eksik alan oranı, gecikme, hata oranı, tahmin dağılımı ve mümkünse gerçek iş sonuçlarını izlemek faydalı olur. **Data Drift (Veri Kayması)**, üretim girdilerinin eğitim verisinden farklılaşmasıdır. **Concept Drift (Kavram Kayması)** ise girdi ile hedef arasındaki ilişkinin değişmesidir.
+**İzleme (monitoring)**, model ve servis davranışını üretimde düzenli olarak takip etmektir. Sunucunun çalışıp çalışmadığının yanında istek hataları, yanıt süresi, eksik veya beklenmeyen girdiler ve tahminlerin dağılımı da izlenebilir. Gerçek sonuçlar daha sonra elde ediliyorsa model kalitesi bu etiketler geldikçe ayrıca değerlendirilir.
 
-Gerçek etiket bazen günler veya haftalar sonra gelebilir. Bu durumda anlık teknik ölçümler ile gecikmeli kalite ölçümünü ayrı izlemek daha anlamlı olabilir. Geri bildirim, otomatik yeniden eğitim anlamına gelmez; önce veri kalitesi, temsil sorunu, iş kuralı ve model davranışı incelenebilir.
+**Veri kayması (data drift)**, üretimde karşılaşılan girdilerin eğitim verisindeki dağılımdan zaman içinde farklılaşmasıdır. **Kavram kayması (concept drift)** ise girdilerle hedef arasındaki ilişkinin değişmesidir. Örneğin kullanıcı davranışlarının değişmesi, aynı özelliklerin artık farklı sonuçlarla ilişkili olmasına yol açabilir.
 
-Model çıktısının dağılımı da erken uyarı sağlayabilir. Bir sınıfın tahmin oranı bir gecede sıfıra inerse modelden önce feature hattında veya sınıf indeksinde bir hata oluşmuş olabilir. Her uyarı için sorumlu kişi, eşik değer ve runbook tanımlamak müdahaleyi kolaylaştırır.
-
-### Sürümleme, Yayın ve Rollback
-
-İzleme sorunu görünür kılar; sürümleme ve rollback ise değişikliğin kaynağını bulup güvenli biçimde müdahale etmeyi sağlar.
-
-Kod, model, veri şeması, özellik işleme hattı ve yapılandırmayı birlikte sürümlemek yararlı olur. Bir sorun oluştuğunda hangi bileşenin değiştiğini bulabilmek ve önceki sürüme güvenle dönebilmek süreci kolaylaştırır. Rollback planını yayın öncesinde hazırlamak da riski azaltabilir.
-
-Model artifact'ı, API sözleşmesi, servisleme yapılandırması ve izleme hazırlıkları tamamlandıktan sonra yeni sürüm önce test ve hazırlık (staging) ortamında önceden belirlenmiş örnek verilerle denenir. **Canlıya alma**, kademeli bir yayında trafiğin sınırlı bir bölümünün yeni sürüme yönlendirilmesiyle başlar. Paralel bir denemede ise yeni sürüm, çıktıları kullanıcıya gösterilmeden mevcut sistemle birlikte çalıştırılıp sonuçlar karşılaştırılabilir. API hata oranı, p95 gecikme süresi, girdi doğrulama başarısı ve iş metrikleri için önceden eşik değerleri belirlemek, yayın kararının daha sağlıklı verilmesini sağlar.
-
-### LLMOps
-
-**LLMOps**, büyük dil modeli tabanlı sistemlerde MLOps ilkelerini prompt versioning, değerlendirme ve bağlam yönetimi gibi ihtiyaçlara uyarlayan bir yaklaşımdır. Klasik model sürümlemesine ek olarak sistem mesajını, prompt şablonunu, kullanılan model sürümünü ve tool çağrısı yapılandırmasını birlikte takip etmek yararlı olabilir.
-
-Bir LLM uygulamasında değerlendirme yalnızca tek bir doğruluk metriğine dayanmayabilir. Göreve uygun bir değerlendirme setiyle yanıtın doğruluğu, biçime uyumu, güvenliği ve gerektiğinde kaynaklara dayanması birlikte incelenebilir. Prompt veya model değiştiğinde, daha önce iyi çalışan örneklerde regresyon oluşup oluşmadığını kontrol etmek iyi bir güvence sağlar.
-
-RAG kullanılan sistemlerde doküman kümesi, embedding modeli ve indeks sürümü de üretim davranışını etkiler. Bu bileşenlerdeki değişiklikleri model değişikliği gibi izlemek; yanıt kalitesini, bilgi getirme başarısını ve gecikmeyi birlikte değerlendirmeyi kolaylaştırır.
-
-Token kullanımı, istek başına maliyet, cache hit oranı, p95 gecikme, hata oranı ve kullanıcı geri bildirimi LLMOps için yararlı izleme verileridir. Halüsinasyon veya güvenlik ihlali riski taşıyan görevlerde güvenlik filtresi, insan incelemesi ya da fallback davranışını önceden tanımlamak düşünülebilir.
+Bir ölçümde değişiklik görülmesi tek başına modelin yeniden eğitilmesi gerektiğini göstermez. Önce veri kalitesi, özellik işleme hattı, uygulamadaki iş kuralları ve model çıktıları birlikte incelenebilir. Gerçek etiketlerin gecikmeli geldiği sistemlerde teknik ölçümlerle model kalite ölçümlerini ayrı takip etmek de yararlıdır.
 
 ### Kapasite, Güvenlik ve Gizlilik
 
-Servis tasarımında yalnızca ortalama istek sayısına bakmak yeterli olmayabilir. Yoğun saatlerdeki eşzamanlı trafik, model yükleme süresi, bellek ihtiyacı ve bağımlı servis limitlerini hesaba katmak faydalı olabilir. Temsili girdi boyutu ve gerçekçi eşzamanlı istek sayısıyla yapılan yük testi, küçük demo verisinde hızlı çalışan bir modelin uzun belgelerde farklı davranabildiğini gösterebilir.
+Canlı sistemin beklenen istek hacminde çalışabilmesi için yoğun zamanlardaki eşzamanlı istekleri, modelin bellek ihtiyacını ve bağlı servislerin sınırlarını hesaba katmak gerekir. Gerçekçi girdi boyutları ve eşzamanlı istek sayılarıyla yapılan **yük testi**, sistemin kapasite sınırlarını önceden görmeye yardımcı olur.
 
-Model servisinde erişim kontrolü, hız sınırı ve girdi sınırı değerlendirmek iyi bir pratiktir. Loglar hata ayıklama için kullanılabilir; ancak kişisel veri veya hassas model çıktısını gereksiz tutmamak önemlidir. Şifreleme, erişim kaydı, veri saklama süresi ve silme talebi gibi gereksinimleri sistem tasarımının başında ele almak ilerideki değişiklikleri kolaylaştırabilir.
+Servisin erişim kontrolü, istek ve girdi boyutu sınırları da tasarımın parçasıdır. Loglar hata incelemesinde işe yarar; ancak kişisel veya hassas verileri gereksiz yere saklamamak gerekir. Erişim yetkileri, şifreleme ve verinin ne kadar süre tutulacağı sistem tasarlanırken belirlenebilir.
+
+### MLOps Akışı
+
+MLOps akışında modelin yaşam döngüsü eğitim tamamlandığında sona ermez. Üretimde gözlenen sonuçlar ve geri bildirimler, modelin veya veri hattının yeniden ele alınması gerekip gerekmediğine dair bilgi sağlar. Bir değişiklik gerektiğinde, önce sorunun modelden mi, girdilerden mi yoksa veri hattından mı kaynaklandığı incelenir. Yeni bir model sürümü hazırlanırsa aynı değerlendirme ölçütleriyle mevcut sürümle karşılaştırılır ve yayına uygunluğu kontrol edilir. Bu kararların ve kullanılan sürümlerin kaydedilmesi, sonraki güncellemelerin de izlenebilir kalmasını sağlar. Böylece geliştirme ve üretim, birbirinden kopuk aşamalar yerine geri bildirimle birbirini besleyen aynı sürecin parçaları olarak yönetilir.
+
+## LLM Deployment ve LLMOps
+
+LLM tabanlı sistemlerde prompt, getirilen bağlam ve araç yapılandırmaları da yanıtı etkiler. Bu yüzden servisleme ve değerlendirme çalışmaları bu bileşenleri de kapsar.
+
+### LLM Servisleme ve Optimizasyon
+
+LLM servisinde maliyet, bellek kullanımı ve yanıt süresi birlikte değerlendirilir. Yaygın optimizasyonlar şöyledir:
+
+* **Quantization:** Model ağırlıklarını daha düşük sayısal hassasiyetle saklayarak bellek ihtiyacını azaltabilir. Kullanılan yönteme bağlı olarak yanıt kalitesinde değişiklik olabileceği için hedef görevde ölçüm yapılır.
+* **KV cache:** Metin token token üretilirken önceki token'lar için hesaplanmış key ve value tensörlerini istek süresince saklar. Böylece her yeni token'da geçmiş token'lar için aynı hesapların baştan yapılması gerekmez; bellek kullanımı artabileceğinden kapasiteyle birlikte değerlendirilir.
+* **Batching (toplu işleme):** Birden fazla isteğin birlikte işlenmesidir. Toplam işlem kapasitesini artırabilir; ancak tek bir isteğin yanıt bekleme süresini de etkileyebilir.
+
+Bir **önbellek (cache)**, uygun olduğunda daha önce üretilmiş yanıtı yeniden kullanarak model çağrılarını azaltabilir. **Anlamsal önbellekleme (semantic caching)**, yalnızca metni birebir aynı olan istekleri değil, anlamca benzer istekleri de eşleştirmeye çalışır. Benzerlik eşiği yanlış seçilirse uygun olmayan bir yanıt dönebilir; güncellik ve kullanıcı yetkileri de eşleşme kararında dikkate alınmalıdır.
+
+**Model yönlendirme (model routing)**, isteği görevine göre farklı model veya servislerden birine gönderme yaklaşımıdır. Daha basit istekler daha küçük bir modele, daha zor görevler daha yetenekli bir modele yönlendirilebilir. Yönlendirme kuralları kalite ve maliyet üzerindeki etkileriyle birlikte değerlendirilir.
+
+Bu yöntemlerin tamamı her uygulama için gerekli değildir. Hedef kullanım biçiminde yanıt kalitesi, bellek, maliyet ve gecikme ölçülerek ihtiyaç duyulan yöntem seçilir.
+
+### Prompt, Model ve Uygulama Sürümleme
+
+Model aynı kalsa bile sistem prompt'undaki veya üretim ayarlarındaki bir değişiklik yanıtları değiştirebilir. Bu nedenle canlıda kullanılan model kimliğini, prompt şablonunu, üretim ayarlarını ve araç yapılandırmasını birlikte kaydetmek yararlıdır.
+
+RAG kullanılan sistemlerde doküman kümesi, parçalama yöntemi, embedding modeli ve arama indeksi de yanıtı etkiler. Bu bileşenlerdeki değişiklikler de takip edilirse bir kalite değişikliğinin modelden mi, prompt'tan mı yoksa getirilen bağlamdan mı kaynaklandığını araştırmak kolaylaşır.
+
+### LLM Değerlendirmesi
+
+LLM yanıtlarını değerlendirmek için görevle ilgili örneklerden oluşan bir test kümesi hazırlanabilir. Yanıtın doğruluğu, istenen biçime uyması, kaynaklara dayanması ve güvenlik koşullarını karşılaması ayrı ölçütler olarak incelenebilir.
+
+Model, prompt veya RAG ayarları değiştiğinde aynı test kümesini yeniden çalıştırmak, önceki sürümde çalışan örneklerde gerileme olup olmadığını görmeye yardımcı olur. Otomatik ölçümler her yanıtı güvenilir biçimde değerlendiremeyebilir; riskin yüksek olduğu kullanım alanlarında insan incelemesi de sürece eklenebilir.
+
+### Maliyet ve Gecikme İzleme
+
+LLM servislerinde genel hata ve yanıt süresi ölçümlerine ek olarak token kullanımı ve istek başına maliyet izlenebilir. **p95 gecikme**, isteklerin yüzde 95'inin tamamlandığı süre sınırını ifade eder; ortalama sürenin gizleyebileceği yavaş istekleri görmeye yardımcı olur. İlk token'a kadar geçen süre ve önbellekten karşılanan isteklerin oranı da ürün deneyimini ve kapasiteyi anlamak için kullanılabilir.
+
+Bu ölçümler değerlendirme sonuçlarıyla birlikte ele alındığında maliyeti düşüren bir değişikliğin yanıt kalitesini nasıl etkilediği de görülebilir. Bir eşik aşıldığında kimin hangi adımları uygulayacağını açıklayan operasyon notlarına **runbook** denir. Örneğin hata oranı yükseldiğinde ilgili sürümü kontrol etmek, trafik yönlendirmesini değiştirmek veya önceki sürüme dönmek bu notlarda yer alabilir.
 
 ## Kaynaklar
 
 ### [FastAPI Documentation](https://fastapi.tiangolo.com/)
 
-Input doğrulama, API sözleşmesi ve servis katmanı için pratik bir referanstır.
+API girdilerini doğrulama ve model tahminlerini bir servis üzerinden sunma konusunda pratik bir kaynaktır.
 
 ### [Docker Documentation](https://docs.docker.com/)
 
-Uygulama bağımlılıklarını paketleme ve tekrarlanabilir çalışma ortamı kurma için temel kaynaktır.
+Uygulamaları ve bağımlılıklarını konteyner içinde paketleme temellerini açıklar.
 
 ### [MLflow Model Registry Documentation](https://mlflow.org/docs/latest/ml/model-registry/)
 
-Deney, artifact ve model sürümü takibinin temel kavramlarını açıklar.
+Model sürümlerini ve model yaşam döngüsünü takip etmeye yönelik kavramları tanıtır.
 
 ### [Google SRE](https://sre.google/)
 
-Gözlemlenebilirlik, güvenilirlik hedefleri ve operasyonel sahiplik için sistem bakışı sunar.
+Servis güvenilirliği, izleme ve operasyon süreçlerine dair sistem bakışı sunar.
